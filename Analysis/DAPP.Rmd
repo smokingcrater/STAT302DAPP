@@ -28,11 +28,29 @@ h4.date {
 <!--- End styling code. --->
 
 ```{r, include = FALSE}
-library(STAT302Package)
 library(ggplot2)
 library(dplyr)
 library(kableExtra)
 set.seed(617)
+```
+
+## **Load data**
+
+```{r}
+# Load the my_gapminder and my_penguins data sets from .csv files.
+my_gapminder <- read.csv("../Data/my_gapminder.csv",
+                         header = TRUE,
+                         stringsAsFactors = TRUE)
+my_penguins <- read.csv("../Data/my_penguins.csv",
+                        header = TRUE,
+                        stringsAsFactors = TRUE)
+```
+
+## **Load source**
+
+```{r}
+# Load my_rf_cv.R() by sourcing it.
+source("../Code/my_rf_cv.R")
 ```
 
 ## **`my_rf_cv()`**
@@ -41,28 +59,30 @@ set.seed(617)
 
 Below we predict body mass (`body_mass_g`) (classification = y) using three characteristics (covariates = x): bill length (`bill_length_mm`), bill depth (`bill_depth_mm`), and flipper length (`flipper_length_mm`).  Cross-validation is applied using fold counts of 2, 5, and finally 10 to the random forest algorithm, 30 times per each of the three specified fold counts.
 
-```{r, eval = FALSE}
+```{r}
 # Cross-validation fold counts.
 folds <- c(2, 5, 10)
 # Number of simulations to run for each fold count.
-iterations <- 3
+iterations <- 30
 # Matrix to gather results for table.
-results <- matrix(nrow = length(folds), ncol = iterations)
+results <- matrix(nrow = iterations, ncol = length(folds))
 # Successively apply random forest algorithm using cross-validation for
 # each fold count specified..
 for (k in 1:length(folds)) {
   for (iteration in 1:iterations) {
-    results[k, iteration] <- my_rf_cv(folds[k])
+    # tmp <- my_rf_cv(folds[k])
+    # cat("results[", iteration, ", ", k, "]: ", tmp, "\n")
+    results[iteration, k] <- my_rf_cv(folds[k])
   }
 }
 ```
 
 The resulting cross-validation mean squared errors (MSEs) for each fold count (`k`) are depicted in the following boxplots:
 
-```{r, eval = FALSE}
+```{r}
 # Convert from matrix to data.frame for ggplot2.
-mse_df <- data.frame(k = as.factor(rep(folds, each = 30)),
-                     mse = c(results[1,], results[2,], results[3,]))
+mse_df <- data.frame(k = as.factor(rep(folds, each = iterations)),
+                     mse = c(results[, 1], results[, 2], results[, 3]))
 
 # Generate a boxplot for each fold count.
 cvmse <- ggplot(data = mse_df, aes(x = k, y = mse)) +
@@ -78,18 +98,18 @@ cvmse
 
 The resulting mean and standard deviation of the cross-validation estimates for each fold count (`k`) are presented below:
 
-```{r, eval = FALSE}
+```{r}
 # Convert from matrix to data.frame for kable table.
 synopsis <- data.frame(
-  "average" = rep(NA, times = nrow(results)),
-  "stdev" = rep(NA, times = nrow(results))
+  "average" = rep(NA, times = ncol(results)),
+  "stdev" = rep(NA, times = ncol(results))
 )
-rn <- rep(NA, times = nrow(results))
+rn <- rep(NA, times = ncol(results))
 
 # Display mean and standard deviation for each fold.
 for (i in 1:length(folds)) {
-  synopsis[i, 1] <- mean(results[i, ])
-  synopsis[i, 2] <- sd(results[i, ])
+  synopsis[i, 1] <- mean(results[, i])
+  synopsis[i, 2] <- sd(results[, i])
   rn[i] <- paste("k (number of folds) = ", folds[i])
 }
 
@@ -103,3 +123,16 @@ cves
 
 The boxplots and table blah, blah, blah
 
+## **Save boxplots figure, cv estimate table, and simulated rf results**
+
+```{r}
+# Save MSE boxplots as PDF.
+ggsave("../Output/Figures/cvmse.pdf", plot = cvmse)
+# Save CV Estimate table as RDS.
+saveRDS(object = cves, file = "../Output/Results/cves.rds")
+# One column for each k.
+results_df <- data.frame(k2 = results[, 1],
+                         k5 = results[, 2],
+                         k10 = results[, 3])
+saveRDS(object = results_df, file = "../Output/Results/results_df.rds")
+```
