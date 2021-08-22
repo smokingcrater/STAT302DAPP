@@ -1,0 +1,105 @@
+---
+title: "Project 3, Part 2: Data Analysis Project Pipeline"
+author: "Brad Scurlock"
+date: "21 Aug 21"
+output: html_document
+---
+
+<!--- Begin styling code. --->
+<style type="text/css">
+/* Whole document: */
+body{
+  font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+  font-size: 12pt;
+}
+h1.title {
+  font-size: 38px;
+  text-align: center;
+}
+h4.author {
+  font-size: 18px;
+  text-align: center;
+}
+h4.date {
+  font-size: 18px;
+  text-align: center;
+}
+</style>
+<!--- End styling code. --->
+
+```{r, include = FALSE}
+library(STAT302Package)
+library(ggplot2)
+library(dplyr)
+library(kableExtra)
+set.seed(617)
+```
+
+## **`my_rf_cv()`**
+
+`my_rf_cv()` applies cross-validation to a random forest algorithm (`randomForest()` from the `randomForest` package).  This function is hard-wired to work solely on the `my_penguins` data set; the only meaningful parameter (an additional `feedback` parameter exists solely for debugging) is `k` which represents the desired number of cross-validation folds.
+
+Below we predict body mass (`body_mass_g`) (classification = y) using three characteristics (covariates = x): bill length (`bill_length_mm`), bill depth (`bill_depth_mm`), and flipper length (`flipper_length_mm`).  Cross-validation is applied using fold counts of 2, 5, and finally 10 to the random forest algorithm, 30 times per each of the three specified fold counts.
+
+```{r, eval = FALSE}
+# Cross-validation fold counts.
+folds <- c(2, 5, 10)
+# Number of simulations to run for each fold count.
+iterations <- 3
+# Matrix to gather results for table.
+results <- matrix(nrow = length(folds), ncol = iterations)
+# Successively apply random forest algorithm using cross-validation for
+# each fold count specified..
+for (k in 1:length(folds)) {
+  for (iteration in 1:iterations) {
+    results[k, iteration] <- my_rf_cv(folds[k])
+  }
+}
+```
+
+The resulting cross-validation mean squared errors (MSEs) for each fold count (`k`) are depicted in the following boxplots:
+
+```{r, eval = FALSE}
+# Convert from matrix to data.frame for ggplot2.
+mse_df <- data.frame(k = as.factor(rep(folds, each = 30)),
+                     mse = c(results[1,], results[2,], results[3,]))
+
+# Generate a boxplot for each fold count.
+cvmse <- ggplot(data = mse_df, aes(x = k, y = mse)) +
+  geom_boxplot(outlier.colour="red", outlier.shape=16,
+               outlier.size=2, notch=TRUE) +
+  theme_bw(base_size = 10) +
+  labs(x = "k (number of folds)",
+       y = "CV estimated MSE",
+       title = "Cross Validation MSEs") +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+cvmse
+```
+
+The resulting mean and standard deviation of the cross-validation estimates for each fold count (`k`) are presented below:
+
+```{r, eval = FALSE}
+# Convert from matrix to data.frame for kable table.
+synopsis <- data.frame(
+  "average" = rep(NA, times = nrow(results)),
+  "stdev" = rep(NA, times = nrow(results))
+)
+rn <- rep(NA, times = nrow(results))
+
+# Display mean and standard deviation for each fold.
+for (i in 1:length(folds)) {
+  synopsis[i, 1] <- mean(results[i, ])
+  synopsis[i, 2] <- sd(results[i, ])
+  rn[i] <- paste("k (number of folds) = ", folds[i])
+}
+
+# Label table.
+rownames(synopsis) <- rn
+colnames(synopsis) <- c("Mean CV Estimate", "Standard Deviation CV Estimate")
+
+cves <- kable_styling(kable(synopsis))
+cves
+```
+
+The boxplots and table blah, blah, blah
+
