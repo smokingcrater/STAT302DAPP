@@ -1,7 +1,7 @@
 ---
 title: "Project 3, Part 2: Data Analysis Project Pipeline"
 author: "Brad Scurlock"
-date: "21 Aug 21"
+date: "22 Aug 21"
 output: html_document
 ---
 
@@ -77,7 +77,7 @@ for (k in 1:length(folds)) {
 }
 ```
 
-The resulting cross-validation mean squared errors (MSEs) for each fold count (`k`) are depicted in the following boxplots:
+The resulting cross-validation estimated mean squared errors (MSEs) for each fold count (`k`) are depicted in the following boxplots:
 
 ```{r}
 # Convert from matrix to data.frame for ggplot2.
@@ -96,7 +96,7 @@ cvmse <- ggplot(data = mse_df, aes(x = k, y = mse)) +
 cvmse
 ```
 
-The resulting mean and standard deviation of the cross-validation estimates for each fold count (`k`) are presented below:
+The resulting mean and standard deviation of the cross-validation estimated MSEs for each fold count (`k`) are presented below:
 
 ```{r}
 # Convert from matrix to data.frame for kable table.
@@ -121,9 +121,11 @@ cves <- kable_styling(kable(synopsis))
 cves
 ```
 
-The boxplots and table blah, blah, blah
+The above boxplots depict the cross-validation estimated MSEs visually while the above table depicts said data textually.  They both suggest that as the number of cross-validation folds increases, both the mean and standard deviations of the cross-validation MSEs, which is what I'd expect.
 
 ## **Save boxplots figure, cv estimate table, and simulated rf results**
+
+The following code saves the boxplots, table, and results.
 
 ```{r}
 # Save MSE boxplots as PDF.
@@ -134,5 +136,9 @@ saveRDS(object = cves, file = "../Output/Results/cves.rds")
 results_df <- data.frame(k2 = results[, 1],
                          k5 = results[, 2],
                          k10 = results[, 3])
-saveRDS(object = results_df, file = "../Output/Results/results_df.rds")
+# Save results of random forest iterations as CSV.
+write.csv(results_df, file="../Output/Results/results_df.csv",
+          row.names = FALSE)
 ```
+
+I verified the timestamp changed on the three resultant output files following each successive knit of this document.
